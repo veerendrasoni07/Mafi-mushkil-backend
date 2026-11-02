@@ -11,8 +11,14 @@ export class NotificationController {
         return;
       }
 
+      const userId = req.user.id;
+      const userObjectId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+
       const notifications = await NotificationModel.find({
-        recipientUserId: new Types.ObjectId(req.user.id),
+        $or: [
+          ...(userObjectId ? [{ recipientUserId: userObjectId }] : []),
+          { recipientUserId: userId as any },
+        ],
       })
         .sort({ createdAt: -1 })
         .limit(50)
@@ -31,8 +37,14 @@ export class NotificationController {
         return;
       }
 
+      const userId = req.user.id;
+      const userObjectId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
+
       const count = await NotificationModel.countDocuments({
-        recipientUserId: new Types.ObjectId(req.user.id),
+        $or: [
+          ...(userObjectId ? [{ recipientUserId: userObjectId }] : []),
+          { recipientUserId: userId as any },
+        ],
         isRead: false,
       });
 
