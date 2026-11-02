@@ -321,3 +321,21 @@ export async function seedDatabase(): Promise<void> {
 
   console.log('[Seed] Database initialization and seeding complete!');
 }
+
+// Execute standalone only when directly executed via CLI (e.g. npm run seed)
+if (process.argv[1]?.includes('seed')) {
+  (async () => {
+    try {
+      const { connectDatabase, disconnectDatabase } = await import('../config/database');
+      console.log('[Seed] Connecting to database for manual seeding...');
+      await connectDatabase();
+      await seedDatabase();
+      await disconnectDatabase();
+      console.log('[Seed] Standalone seeding completed successfully.');
+      process.exit(0);
+    } catch (err) {
+      console.error('[Seed] Standalone seeding failed:', err);
+      process.exit(1);
+    }
+  })();
+}

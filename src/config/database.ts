@@ -8,6 +8,9 @@ export async function connectDatabase(): Promise<void> {
   let uri = config.mongoUri;
 
   if (!uri) {
+    if (config.nodeEnv === 'production') {
+      throw new Error('[Database] MONGODB_URI environment variable is required in production mode.');
+    }
     console.log('[Database] No MONGODB_URI provided. Initializing in-memory MongoDB server...');
     mongoMemoryServer = await MongoMemoryServer.create();
     uri = mongoMemoryServer.getUri();
@@ -18,6 +21,10 @@ export async function connectDatabase(): Promise<void> {
     await mongoose.connect(uri);
     console.log('[Database] MongoDB connected successfully.');
   } catch (err) {
+    if (config.nodeEnv === 'production') {
+      console.error('[Database] Failed to connect to MongoDB in production:', err);
+      throw err;
+    }
     console.warn('[Database] Failed to connect to provided MONGODB_URI. Falling back to in-memory MongoDB...', err);
     if (!mongoMemoryServer) {
       mongoMemoryServer = await MongoMemoryServer.create();

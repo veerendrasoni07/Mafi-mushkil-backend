@@ -2,14 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = require("./app");
 const database_1 = require("./config/database");
-const seed_1 = require("./database/seed");
 const env_1 = require("./config/env");
 async function bootstrap() {
     try {
         console.log('[Server] Connecting to database...');
         await (0, database_1.connectDatabase)();
-        console.log('[Server] Seeding initial data...');
-        await (0, seed_1.seedDatabase)();
         const app = (0, app_1.createApp)();
         const server = app.listen(env_1.config.port, () => {
             console.log(`=======================================================`);

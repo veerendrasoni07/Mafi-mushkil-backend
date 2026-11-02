@@ -1,15 +1,11 @@
 import { createApp } from './app';
 import { connectDatabase, disconnectDatabase } from './config/database';
-import { seedDatabase } from './database/seed';
 import { config } from './config/env';
 
 async function bootstrap() {
   try {
     console.log('[Server] Connecting to database...');
     await connectDatabase();
-
-    console.log('[Server] Seeding initial data...');
-    await seedDatabase();
 
     const app = createApp();
     const server = app.listen(config.port, () => {

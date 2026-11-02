@@ -12,6 +12,9 @@ let mongoMemoryServer = null;
 async function connectDatabase() {
     let uri = env_1.config.mongoUri;
     if (!uri) {
+        if (env_1.config.nodeEnv === 'production') {
+            throw new Error('[Database] MONGODB_URI environment variable is required in production mode.');
+        }
         console.log('[Database] No MONGODB_URI provided. Initializing in-memory MongoDB server...');
         mongoMemoryServer = await mongodb_memory_server_1.MongoMemoryServer.create();
         uri = mongoMemoryServer.getUri();
@@ -22,6 +25,10 @@ async function connectDatabase() {
         console.log('[Database] MongoDB connected successfully.');
     }
     catch (err) {
+        if (env_1.config.nodeEnv === 'production') {
+            console.error('[Database] Failed to connect to MongoDB in production:', err);
+            throw err;
+        }
         console.warn('[Database] Failed to connect to provided MONGODB_URI. Falling back to in-memory MongoDB...', err);
         if (!mongoMemoryServer) {
             mongoMemoryServer = await mongodb_memory_server_1.MongoMemoryServer.create();
