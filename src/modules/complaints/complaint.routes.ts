@@ -27,11 +27,11 @@ router.get(
   ComplaintController.getMyComplaints
 );
 
-// Owner lists all complaints
+// Admin / Owner lists all complaints
 router.get(
   '/',
   authenticate,
-  authorizeRoles(UserRole.OWNER),
+  authorizeRoles(UserRole.ADMIN, UserRole.OWNER),
   ComplaintController.getAllComplaints
 );
 

@@ -9,8 +9,10 @@ import { UserRole } from '../../shared/constants/roles';
 import { sendSuccess, sendError } from '../../shared/utils/response';
 
 export const CreateComplaintSchema = z.object({
-  requestId: z.string().min(1, 'Request ID is required'),
-  description: z.string().min(5, 'Complaint description must be at least 5 characters').max(2000),
+  requestId: z.string().optional(),
+  serviceTitle: z.string().optional(),
+  issueCategory: z.string().optional(),
+  description: z.string().min(3, 'Complaint description must be at least 3 characters').max(2000),
 });
 
 export class ComplaintController {
@@ -21,35 +23,44 @@ export class ComplaintController {
         return;
       }
 
-      const { requestId, description } = req.body;
-      const request = await ServiceRequestModel.findById(requestId);
+      const { requestId, serviceTitle, issueCategory, description } = req.body;
+      let requestObjId: Types.ObjectId | undefined;
+      let requestNumber = 'General';
+      let serviceSnapshot = serviceTitle || 'General Issue';
 
-      if (!request) {
-        sendError(res, 'REQUEST_NOT_FOUND', 'Selected order was not found', 404);
-        return;
-      }
-
-      // Check customer ownership
-      if (request.customerId.toString() !== req.user.id) {
-        sendError(res, 'FORBIDDEN', 'You can only raise complaints for your own orders', 403);
-        return;
+      if (requestId) {
+        const request = await ServiceRequestModel.findById(requestId);
+        if (request) {
+          // If customer provided an order, verify ownership
+          if (request.customerId.toString() !== req.user.id) {
+            sendError(res, 'FORBIDDEN', 'You can only raise complaints for your own orders', 403);
+            return;
+          }
+          requestObjId = request._id;
+          requestNumber = request.requestNumber;
+          serviceSnapshot = request.snapshotTitle;
+        }
       }
 
       const complaint = await ComplaintModel.create({
         customerId: new Types.ObjectId(req.user.id),
-        requestId: request._id,
-        requestNumberSnapshot: request.requestNumber,
-        serviceTitleSnapshot: request.snapshotTitle,
+        requestId: requestObjId,
+        requestNumberSnapshot: requestNumber,
+        serviceTitleSnapshot: serviceSnapshot,
+        issueCategory,
         description,
       });
 
-      // Notify Owner
+      // Notify Admins/Owners
       try {
-        const owners = await UserModel.find({ role: UserRole.OWNER, isActive: true });
+        const owners = await UserModel.find({
+          role: { $in: [UserRole.ADMIN, UserRole.OWNER] },
+          isActive: true,
+        });
         for (const owner of owners) {
           await NotificationModel.create({
             recipientUserId: owner._id,
-            title: `Complaint for ${request.requestNumber}`,
+            title: `Complaint: ${serviceSnapshot}`,
             body: `${req.user.name} reported an issue: "${description.slice(0, 80)}..."`,
             type: NotificationType.COMPLAINT,
             entityId: complaint._id,

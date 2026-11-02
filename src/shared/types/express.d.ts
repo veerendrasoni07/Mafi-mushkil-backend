@@ -5,9 +5,11 @@ declare global {
     interface Request {
       user?: {
         id: string;
-        phone: string;
+        phone?: string;
+        email?: string;
         role: UserRole;
         name: string;
+        mustChangePassword?: boolean;
       };
     }
   }

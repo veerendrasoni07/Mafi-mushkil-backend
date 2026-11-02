@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserRole } from '../shared/constants/roles';
+import { UserRole, isAdminRole } from '../shared/constants/roles';
 import { sendError } from '../shared/utils/response';
 
 export function authorizeRoles(...allowedRoles: UserRole[]) {
@@ -9,11 +9,24 @@ export function authorizeRoles(...allowedRoles: UserRole[]) {
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const userRole = req.user.role;
+
+    // Check if role is directly in allowed list
+    let isAllowed = allowedRoles.includes(userRole);
+
+    // If allowedRoles includes ADMIN or OWNER, treat both as authorized administrators
+    if (!isAllowed) {
+      const allowsAdmin = allowedRoles.some((r) => r === UserRole.ADMIN || r === UserRole.OWNER);
+      if (allowsAdmin && isAdminRole(userRole)) {
+        isAllowed = true;
+      }
+    }
+
+    if (!isAllowed) {
       sendError(
         res,
         'FORBIDDEN',
-        `Role '${req.user.role}' is not authorized to access this resource`,
+        `Role '${userRole}' is not authorized to access this resource`,
         403
       );
       return;

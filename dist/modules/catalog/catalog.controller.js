@@ -15,6 +15,7 @@ class CatalogController {
                 slug: s.slug,
                 iconKey: s.iconKey,
                 sortOrder: s.sortOrder,
+                complaintIssues: s.complaintIssues || [],
             }));
             (0, response_1.sendSuccess)(res, formatted);
         }

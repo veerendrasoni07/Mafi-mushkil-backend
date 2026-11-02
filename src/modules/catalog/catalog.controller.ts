@@ -15,6 +15,7 @@ export class CatalogController {
         slug: s.slug,
         iconKey: s.iconKey,
         sortOrder: s.sortOrder,
+        complaintIssues: s.complaintIssues || [],
       }));
 
       sendSuccess(res, formatted);

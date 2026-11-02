@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { UserModel } from '../modules/users/user.model';
 import { ServiceModel, CategoryModel, ProductModel } from '../modules/catalog/catalog.models';
 import { ServiceRequestModel } from '../modules/requests/request.model';
@@ -13,142 +14,267 @@ export async function seedDatabase(): Promise<void> {
   const existingUsers = await UserModel.countDocuments();
   if (existingUsers === 0) {
     console.log('[Seed] Seeding Users...');
+    const defaultPasswordHash = await bcrypt.hash('password123', 10);
     const users = await UserModel.insertMany([
       {
         name: 'Priya',
+        email: 'priya@mafimushkil.com',
         phone: '+919876543210',
+        passwordHash: defaultPasswordHash,
         role: UserRole.CUSTOMER,
         avatarInitial: 'P',
         isActive: true,
+        mustChangePassword: false,
       },
       {
         name: 'Arjun Rao',
+        email: 'arjun@mafimushkil.com',
         phone: '+919811122233',
+        passwordHash: defaultPasswordHash,
         role: UserRole.CUSTOMER,
         avatarInitial: 'A',
         isActive: true,
+        mustChangePassword: false,
       },
       {
-        name: 'Mafi Mushkil Owner',
+        name: 'Mafi Mushkil Admin',
+        email: 'admin@mafimushkil.com',
         phone: '+919999900000',
-        role: UserRole.OWNER,
+        passwordHash: defaultPasswordHash,
+        role: UserRole.ADMIN,
         avatarInitial: 'M',
         isActive: true,
+        mustChangePassword: false,
       },
       {
         name: 'Rahul Patil',
+        email: 'rahul@mafimushkil.com',
         phone: '+919800011111',
+        passwordHash: defaultPasswordHash,
         role: UserRole.ENGINEER,
         avatarInitial: 'R',
         isActive: true,
+        mustChangePassword: false,
       },
       {
         name: 'Sneha Kulkarni',
+        email: 'sneha@mafimushkil.com',
         phone: '+919800022222',
+        passwordHash: defaultPasswordHash,
         role: UserRole.ENGINEER,
         avatarInitial: 'S',
         isActive: true,
+        mustChangePassword: false,
       },
       {
         name: 'Amit Shah',
+        email: 'amit@mafimushkil.com',
         phone: '+919800033333',
+        passwordHash: defaultPasswordHash,
         role: UserRole.ENGINEER,
         avatarInitial: 'A',
         isActive: true,
+        mustChangePassword: false,
       },
     ]);
     console.log(`[Seed] Seeded ${users.length} users.`);
   }
 
-  // 2. SEED CATALOG (Services, Categories, Products)
+  // 2. SEED CATALOG (7 Client Services, Sub-services, Products)
   const existingServices = await ServiceModel.countDocuments();
   if (existingServices === 0) {
-    console.log('[Seed] Seeding Services...');
+    console.log('[Seed] Seeding 7 Client Services...');
     const services = await ServiceModel.insertMany([
-      { title: 'Camera Install', slug: 'camera-install', iconKey: 'camera', sortOrder: 1 },
-      { title: 'PC Repair', slug: 'pc-repair', iconKey: 'monitor', sortOrder: 2 },
-      { title: 'Keyboard', slug: 'keyboard', iconKey: 'keyboard', sortOrder: 3 },
-      { title: 'Mouse', slug: 'mouse', iconKey: 'mouse', sortOrder: 4 },
-      { title: 'CPU', slug: 'cpu', iconKey: 'cpu', sortOrder: 5 },
-      { title: 'Networking', slug: 'networking', iconKey: 'wifi', sortOrder: 6 },
-      { title: 'Printer', slug: 'printer', iconKey: 'printer', sortOrder: 7 },
-      { title: 'Data Backup', slug: 'data-backup', iconKey: 'storage', sortOrder: 8 },
-      { title: 'More', slug: 'more', iconKey: 'more', sortOrder: 9 },
+      {
+        title: 'Computers & Laptops',
+        slug: 'computers-laptops',
+        iconKey: 'computer',
+        sortOrder: 1,
+        complaintIssues: ['No Display', 'Overheating', 'Slow Performance', 'Virus/Malware Issues'],
+      },
+      {
+        title: 'CCTV & Surveillance Systems',
+        slug: 'cctv-surveillance',
+        iconKey: 'cctv',
+        sortOrder: 2,
+        complaintIssues: ['Camera Not Working', 'No Recording', 'Night Vision Failure', 'Live Feed Errors'],
+      },
+      {
+        title: 'Printers & Scanners',
+        slug: 'printers-scanners',
+        iconKey: 'printer',
+        sortOrder: 3,
+        complaintIssues: ['Printing Quality Issues', 'Scanner Not Connecting', 'Printer Not Turning On'],
+      },
+      {
+        title: 'Servers & Networking Solutions',
+        slug: 'servers-networking',
+        iconKey: 'server',
+        sortOrder: 4,
+        complaintIssues: ['No Internet', 'Internet Drops', 'Wi-Fi Range Issues', 'Network Not Working'],
+      },
+      {
+        title: 'EPABX Systems & Biometric Machines',
+        slug: 'epabx-biometric',
+        iconKey: 'biometric',
+        sortOrder: 5,
+        complaintIssues: ['Calls Not Connecting', 'Machine Not Recognizing Face/Fingerprint', 'Power Issues'],
+      },
+      {
+        title: 'Wi-Fi Services',
+        slug: 'wifi-services',
+        iconKey: 'wifi',
+        sortOrder: 6,
+        complaintIssues: ['No Internet', 'Low Speed', 'Frequent Disconnections', 'Wi-Fi Range Issues'],
+      },
+      {
+        title: 'Annual Maintenance Contracts (AMC)',
+        slug: 'amc-contracts',
+        iconKey: 'amc',
+        sortOrder: 7,
+        complaintIssues: ['Scheduled Visit Delay', 'Contract Coverage Inquiry'],
+      },
     ]);
 
-    const cameraService = services.find((s) => s.slug === 'camera-install')!;
+    const compService = services.find((s) => s.slug === 'computers-laptops')!;
+    const cctvService = services.find((s) => s.slug === 'cctv-surveillance')!;
+    const printService = services.find((s) => s.slug === 'printers-scanners')!;
+    const netService = services.find((s) => s.slug === 'servers-networking')!;
+    const epabxService = services.find((s) => s.slug === 'epabx-biometric')!;
+    const wifiService = services.find((s) => s.slug === 'wifi-services')!;
+    const amcService = services.find((s) => s.slug === 'amc-contracts')!;
 
-    console.log('[Seed] Seeding Camera Categories...');
+    console.log('[Seed] Seeding Sub-services (Categories)...');
     const categories = await CategoryModel.insertMany([
-      { serviceId: cameraService._id, title: 'Dome', slug: 'dome', iconKey: 'dome', sortOrder: 1 },
-      { serviceId: cameraService._id, title: 'Bullet', slug: 'bullet', iconKey: 'bullet', sortOrder: 2 },
-      { serviceId: cameraService._id, title: 'PTZ', slug: 'ptz', iconKey: 'ptz', sortOrder: 3 },
-      { serviceId: cameraService._id, title: 'Wi-Fi / IP', slug: 'wifi-ip', iconKey: 'wifi', sortOrder: 4 },
-      { serviceId: cameraService._id, title: 'DVR / NVR', slug: 'dvr-nvr', iconKey: 'dvr', sortOrder: 5 },
-      { serviceId: cameraService._id, title: 'Accessories', slug: 'accessories', iconKey: 'plug', sortOrder: 6 },
+      // 1. Computers & Laptops
+      { serviceId: compService._id, title: 'Buy New Desktop/Laptop', slug: 'buy-desktop-laptop', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: compService._id, title: 'Hardware Repair', slug: 'hardware-repair', iconKey: 'build', sortOrder: 2 },
+      { serviceId: compService._id, title: 'Windows/Software Updates', slug: 'windows-software-updates', iconKey: 'software_update', sortOrder: 3 },
+      { serviceId: compService._id, title: 'OS Installation', slug: 'os-installation', iconKey: 'os_install', sortOrder: 4 },
+      { serviceId: compService._id, title: 'Upgradation', slug: 'upgradation', iconKey: 'upgrade', sortOrder: 5 },
+
+      // 2. CCTV & Surveillance Systems
+      { serviceId: cctvService._id, title: 'Buy New CCTV System', slug: 'buy-cctv-system', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: cctvService._id, title: 'New Installation', slug: 'new-installation', iconKey: 'build', sortOrder: 2 },
+      { serviceId: cctvService._id, title: 'Regular Maintenance', slug: 'regular-maintenance', iconKey: 'maintenance', sortOrder: 3 },
+      { serviceId: cctvService._id, title: 'System Upgradation', slug: 'system-upgradation', iconKey: 'upgrade', sortOrder: 4 },
+      { serviceId: cctvService._id, title: 'Cable Wiring', slug: 'cable-wiring', iconKey: 'cable', sortOrder: 5 },
+
+      // 3. Printers & Scanners
+      { serviceId: printService._id, title: 'Buy New Printer', slug: 'buy-new-printer', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: printService._id, title: 'Repair Printer', slug: 'repair-printer', iconKey: 'build', sortOrder: 2 },
+      { serviceId: printService._id, title: 'Toner/Cartridge Refill', slug: 'toner-cartridge-refill', iconKey: 'refill', sortOrder: 3 },
+      { serviceId: printService._id, title: 'Paper Jam Repair', slug: 'paper-jam-repair', iconKey: 'paper_jam', sortOrder: 4 },
+      { serviceId: printService._id, title: 'Network Printer Setup', slug: 'network-printer-setup', iconKey: 'networking', sortOrder: 5 },
+
+      // 4. Servers & Networking Solutions
+      { serviceId: netService._id, title: 'Buy New Networking Hardware', slug: 'buy-networking-hardware', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: netService._id, title: 'Router Configuration', slug: 'router-configuration', iconKey: 'router', sortOrder: 2 },
+      { serviceId: netService._id, title: 'LAN Wiring', slug: 'lan-wiring', iconKey: 'cable', sortOrder: 3 },
+      { serviceId: netService._id, title: 'Wi-Fi Setup', slug: 'wifi-setup', iconKey: 'wifi', sortOrder: 4 },
+      { serviceId: netService._id, title: 'Server Rack Management', slug: 'server-rack-management', iconKey: 'server', sortOrder: 5 },
+
+      // 5. EPABX Systems & Biometric Machines
+      { serviceId: epabxService._id, title: 'Buy New EPABX/Biometric System', slug: 'buy-epabx-biometric', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: epabxService._id, title: 'Calling System Setup', slug: 'calling-system-setup', iconKey: 'phone', sortOrder: 2 },
+      { serviceId: epabxService._id, title: 'Biometric Installation', slug: 'biometric-installation', iconKey: 'fingerprint', sortOrder: 3 },
+      { serviceId: epabxService._id, title: 'Access Control Management', slug: 'access-control-management', iconKey: 'security', sortOrder: 4 },
+
+      // 6. Wi-Fi Services
+      { serviceId: wifiService._id, title: 'Buy New Wi-Fi Connection', slug: 'buy-wifi-connection', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: wifiService._id, title: 'Plan Upgrade', slug: 'plan-upgrade', iconKey: 'upgrade', sortOrder: 2 },
+      { serviceId: wifiService._id, title: 'Wi-Fi Setup/Installation', slug: 'wifi-setup-installation', iconKey: 'wifi', sortOrder: 3 },
+      { serviceId: wifiService._id, title: 'Router/Modem Repair', slug: 'router-modem-repair', iconKey: 'build', sortOrder: 4 },
+
+      // 7. Annual Maintenance Contracts (AMC)
+      { serviceId: amcService._id, title: 'Buy New AMC Plan', slug: 'buy-amc-plan', iconKey: 'shopping_bag', sortOrder: 1 },
+      { serviceId: amcService._id, title: 'AMC Renewal', slug: 'amc-renewal', iconKey: 'renewal', sortOrder: 2 },
+      { serviceId: amcService._id, title: 'Request Scheduled Maintenance', slug: 'request-scheduled-maintenance', iconKey: 'maintenance', sortOrder: 3 },
     ]);
 
-    const domeCategory = categories.find((c) => c.slug === 'dome')!;
+    const buyCompCat = categories.find((c) => c.slug === 'buy-desktop-laptop')!;
+    const repairCompCat = categories.find((c) => c.slug === 'hardware-repair')!;
+    const buyCctvCat = categories.find((c) => c.slug === 'buy-cctv-system')!;
 
-    console.log('[Seed] Seeding Dome Camera Products...');
+    console.log('[Seed] Seeding Products & Service Packages...');
     await ProductModel.insertMany([
       {
-        serviceId: cameraService._id,
-        categoryId: domeCategory._id,
-        title: 'Dome 2MP Indoor',
-        description: 'High-definition 1080p indoor dome security camera with infrared night vision.',
-        priceMinorUnits: 149900,
+        serviceId: compService._id,
+        categoryId: buyCompCat._id,
+        title: 'Core i5 Office Desktop Setup',
+        description: 'Intel Core i5, 16GB RAM, 512GB NVMe SSD, 22-inch HD Monitor with Windows 11 Pro.',
+        priceMinorUnits: 3499900,
         currency: 'INR',
-        imageKey: 'dome_2mp',
+        imageKey: 'desktop_setup',
         sortOrder: 1,
       },
       {
-        serviceId: cameraService._id,
-        categoryId: domeCategory._id,
-        title: 'Dome 5MP Night Vision',
-        description: 'Ultra-clear 5MP resolution with advanced color night vision and weatherproofing.',
-        priceMinorUnits: 249900,
+        serviceId: compService._id,
+        categoryId: buyCompCat._id,
+        title: 'Business Laptop 16GB RAM',
+        description: 'Ultra-thin business laptop with 15.6-inch FHD display, fast battery charging & SSD.',
+        priceMinorUnits: 4850000,
         currency: 'INR',
-        imageKey: 'dome_5mp',
+        imageKey: 'laptop_business',
         sortOrder: 2,
       },
       {
-        serviceId: cameraService._id,
-        categoryId: domeCategory._id,
-        title: 'Dome Audio Camera',
-        description: 'Dome camera with integrated two-way audio microphone and noise cancellation.',
-        priceMinorUnits: 299900,
+        serviceId: compService._id,
+        categoryId: repairCompCat._id,
+        title: 'Diagnostic & Chipset Repair',
+        description: 'In-depth motherboard & component troubleshooting, heat sink cleaning and repair.',
+        priceMinorUnits: 79900,
         currency: 'INR',
-        imageKey: 'dome_audio',
-        sortOrder: 3,
+        imageKey: 'chipset_repair',
+        sortOrder: 1,
+      },
+      {
+        serviceId: cctvService._id,
+        categoryId: buyCctvCat._id,
+        title: '4-Channel HD Dome CCTV System',
+        description: 'Includes 4 HD dome cameras, 1TB surveillance hard drive, 4-channel DVR and power supply.',
+        priceMinorUnits: 1299900,
+        currency: 'INR',
+        imageKey: 'cctv_kit_4ch',
+        sortOrder: 1,
+      },
+      {
+        serviceId: cctvService._id,
+        categoryId: buyCctvCat._id,
+        title: '8-Channel 5MP Surveillance System',
+        description: 'Ultra HD 5MP outdoor & indoor kit with remote phone streaming and night vision.',
+        priceMinorUnits: 2499900,
+        currency: 'INR',
+        imageKey: 'cctv_kit_8ch',
+        sortOrder: 2,
       },
     ]);
   }
 
-  // 3. SEED REQUESTS (matching PDF screens 3, 4, 6)
+  // 3. SEED REQUESTS
   const existingRequests = await ServiceRequestModel.countDocuments();
   if (existingRequests === 0) {
     console.log('[Seed] Seeding Service Requests...');
     const priya = await UserModel.findOne({ phone: '+919876543210' });
     const arjun = await UserModel.findOne({ phone: '+919811122233' });
-    const owner = await UserModel.findOne({ role: UserRole.OWNER });
+    const owner = await UserModel.findOne({ role: { $in: [UserRole.ADMIN, UserRole.OWNER] } });
     const rahul = await UserModel.findOne({ name: 'Rahul Patil' });
     const sneha = await UserModel.findOne({ name: 'Sneha Kulkarni' });
-    const cameraService = await ServiceModel.findOne({ slug: 'camera-install' });
-    const keyboardService = await ServiceModel.findOne({ slug: 'keyboard' });
-    const mouseService = await ServiceModel.findOne({ slug: 'mouse' });
-    const pcRepairService = await ServiceModel.findOne({ slug: 'pc-repair' });
+    const cctvService = await ServiceModel.findOne({ slug: 'cctv-surveillance' });
+    const compService = await ServiceModel.findOne({ slug: 'computers-laptops' });
+    const printService = await ServiceModel.findOne({ slug: 'printers-scanners' });
+    const wifiService = await ServiceModel.findOne({ slug: 'wifi-services' });
 
-    if (priya && arjun && owner && rahul && sneha && cameraService && keyboardService && mouseService && pcRepairService) {
+    if (priya && arjun && owner && rahul && sneha && cctvService && compService && printService && wifiService) {
       await ServiceRequestModel.insertMany([
         {
           requestNumber: '#103',
           customerId: arjun._id,
           customerNameSnapshot: arjun.name,
           customerPhoneSnapshot: arjun.phone,
-          serviceId: mouseService._id,
-          snapshotTitle: 'Mouse double-clicking',
-          problemDescription: 'Mouse not responding well and double clicking on single tap',
+          serviceId: wifiService._id,
+          snapshotTitle: 'Wi-Fi Services',
+          problemDescription: 'Frequent disconnects and high ping during office hours',
           address: 'Powai, Mumbai',
           status: RequestStatus.OPEN,
           statusHistory: [
@@ -166,9 +292,9 @@ export async function seedDatabase(): Promise<void> {
           customerId: priya._id,
           customerNameSnapshot: priya.name,
           customerPhoneSnapshot: priya.phone,
-          serviceId: keyboardService._id,
-          snapshotTitle: 'Keyboard',
-          problemDescription: 'Several keys not working properly on mechanical board',
+          serviceId: printService._id,
+          snapshotTitle: 'Printers & Scanners',
+          problemDescription: 'Printer paper jam repair and toner refill needed',
           address: 'Bandra, Mumbai',
           status: RequestStatus.OPEN,
           statusHistory: [
@@ -186,9 +312,9 @@ export async function seedDatabase(): Promise<void> {
           customerId: priya._id,
           customerNameSnapshot: priya.name,
           customerPhoneSnapshot: priya.phone,
-          serviceId: cameraService._id,
-          snapshotTitle: 'Camera Install',
-          problemDescription: '4 CCTV cameras for shop',
+          serviceId: cctvService._id,
+          snapshotTitle: 'CCTV & Surveillance Systems',
+          problemDescription: 'Install 4 CCTV cameras for shop',
           address: 'Andheri West, Mumbai',
           status: RequestStatus.ASSIGNED,
           assignedEngineerId: rahul._id,
@@ -215,9 +341,9 @@ export async function seedDatabase(): Promise<void> {
           customerId: priya._id,
           customerNameSnapshot: priya.name,
           customerPhoneSnapshot: priya.phone,
-          serviceId: pcRepairService._id,
-          snapshotTitle: 'PC Repair',
-          problemDescription: 'PC not booting, power LED blinks blue then turns off',
+          serviceId: compService._id,
+          snapshotTitle: 'Computers & Laptops',
+          problemDescription: 'No display and power blinking on desktop PC',
           address: 'Bandra, Mumbai',
           status: RequestStatus.RESOLVED,
           assignedEngineerId: sneha._id,
@@ -248,9 +374,9 @@ export async function seedDatabase(): Promise<void> {
           customerId: arjun._id,
           customerNameSnapshot: arjun.name,
           customerPhoneSnapshot: arjun.phone,
-          serviceId: cameraService._id,
-          snapshotTitle: 'Camera Install',
-          problemDescription: 'Wi-Fi camera offline',
+          serviceId: cctvService._id,
+          snapshotTitle: 'CCTV & Surveillance Systems',
+          problemDescription: 'Wi-Fi camera offline and red light blinking',
           address: 'Powai, Mumbai',
           status: RequestStatus.RESOLVED,
           assignedEngineerId: rahul._id,

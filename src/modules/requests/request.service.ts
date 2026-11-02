@@ -73,9 +73,12 @@ export class RequestService {
       ],
     });
 
-    // Notify all owners
+    // Notify all admins/owners
     try {
-      const owners = await UserModel.find({ role: UserRole.OWNER, isActive: true });
+      const owners = await UserModel.find({
+        role: { $in: [UserRole.ADMIN, UserRole.OWNER] },
+        isActive: true,
+      });
       for (const owner of owners) {
         await NotificationModel.create({
           recipientUserId: owner._id,

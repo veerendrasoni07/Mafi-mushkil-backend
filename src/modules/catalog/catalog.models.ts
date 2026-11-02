@@ -6,6 +6,7 @@ export interface IService extends Document {
   slug: string;
   iconKey: string;
   sortOrder: number;
+  complaintIssues: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -17,6 +18,7 @@ const ServiceSchema = new Schema<IService>(
     slug: { type: String, required: true, unique: true, trim: true, lowercase: true },
     iconKey: { type: String, required: true, default: 'build' },
     sortOrder: { type: Number, default: 0 },
+    complaintIssues: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

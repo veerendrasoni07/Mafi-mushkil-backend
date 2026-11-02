@@ -10,8 +10,10 @@ const notification_model_1 = require("../notifications/notification.model");
 const roles_1 = require("../../shared/constants/roles");
 const response_1 = require("../../shared/utils/response");
 exports.CreateComplaintSchema = zod_1.z.object({
-    requestId: zod_1.z.string().min(1, 'Request ID is required'),
-    description: zod_1.z.string().min(5, 'Complaint description must be at least 5 characters').max(2000),
+    requestId: zod_1.z.string().optional(),
+    serviceTitle: zod_1.z.string().optional(),
+    issueCategory: zod_1.z.string().optional(),
+    description: zod_1.z.string().min(3, 'Complaint description must be at least 3 characters').max(2000),
 });
 class ComplaintController {
     static async create(req, res) {
@@ -20,31 +22,41 @@ class ComplaintController {
                 (0, response_1.sendError)(res, 'UNAUTHORIZED', 'Authentication required', 401);
                 return;
             }
-            const { requestId, description } = req.body;
-            const request = await request_model_1.ServiceRequestModel.findById(requestId);
-            if (!request) {
-                (0, response_1.sendError)(res, 'REQUEST_NOT_FOUND', 'Selected order was not found', 404);
-                return;
-            }
-            // Check customer ownership
-            if (request.customerId.toString() !== req.user.id) {
-                (0, response_1.sendError)(res, 'FORBIDDEN', 'You can only raise complaints for your own orders', 403);
-                return;
+            const { requestId, serviceTitle, issueCategory, description } = req.body;
+            let requestObjId;
+            let requestNumber = 'General';
+            let serviceSnapshot = serviceTitle || 'General Issue';
+            if (requestId) {
+                const request = await request_model_1.ServiceRequestModel.findById(requestId);
+                if (request) {
+                    // If customer provided an order, verify ownership
+                    if (request.customerId.toString() !== req.user.id) {
+                        (0, response_1.sendError)(res, 'FORBIDDEN', 'You can only raise complaints for your own orders', 403);
+                        return;
+                    }
+                    requestObjId = request._id;
+                    requestNumber = request.requestNumber;
+                    serviceSnapshot = request.snapshotTitle;
+                }
             }
             const complaint = await complaint_model_1.ComplaintModel.create({
                 customerId: new mongoose_1.Types.ObjectId(req.user.id),
-                requestId: request._id,
-                requestNumberSnapshot: request.requestNumber,
-                serviceTitleSnapshot: request.snapshotTitle,
+                requestId: requestObjId,
+                requestNumberSnapshot: requestNumber,
+                serviceTitleSnapshot: serviceSnapshot,
+                issueCategory,
                 description,
             });
-            // Notify Owner
+            // Notify Admins/Owners
             try {
-                const owners = await user_model_1.UserModel.find({ role: roles_1.UserRole.OWNER, isActive: true });
+                const owners = await user_model_1.UserModel.find({
+                    role: { $in: [roles_1.UserRole.ADMIN, roles_1.UserRole.OWNER] },
+                    isActive: true,
+                });
                 for (const owner of owners) {
                     await notification_model_1.NotificationModel.create({
                         recipientUserId: owner._id,
-                        title: `Complaint for ${request.requestNumber}`,
+                        title: `Complaint: ${serviceSnapshot}`,
                         body: `${req.user.name} reported an issue: "${description.slice(0, 80)}..."`,
                         type: notification_model_1.NotificationType.COMPLAINT,
                         entityId: complaint._id,

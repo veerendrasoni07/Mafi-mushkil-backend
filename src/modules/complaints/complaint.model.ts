@@ -3,9 +3,10 @@ import { ComplaintStatus } from '../../shared/constants/status';
 
 export interface IComplaint extends Document {
   customerId: Types.ObjectId;
-  requestId: Types.ObjectId;
+  requestId?: Types.ObjectId;
   requestNumberSnapshot: string;
   serviceTitleSnapshot: string;
+  issueCategory?: string;
   description: string;
   status: ComplaintStatus;
   ownerResponse?: string;
@@ -16,9 +17,10 @@ export interface IComplaint extends Document {
 const ComplaintSchema = new Schema<IComplaint>(
   {
     customerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    requestId: { type: Schema.Types.ObjectId, ref: 'ServiceRequest', required: true, index: true },
-    requestNumberSnapshot: { type: String, required: true },
+    requestId: { type: Schema.Types.ObjectId, ref: 'ServiceRequest', required: false, index: true },
+    requestNumberSnapshot: { type: String, default: 'General' },
     serviceTitleSnapshot: { type: String, required: true },
+    issueCategory: { type: String },
     description: { type: String, required: true, maxlength: 2000 },
     status: {
       type: String,

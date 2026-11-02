@@ -11,6 +11,6 @@ const router = (0, express_1.Router)();
 router.post('/', auth_middleware_1.authenticate, (0, rbac_middleware_1.authorizeRoles)(roles_1.UserRole.CUSTOMER), (0, validate_middleware_1.validateBody)(complaint_controller_1.CreateComplaintSchema), complaint_controller_1.ComplaintController.create);
 // Customer lists own complaints
 router.get('/my', auth_middleware_1.authenticate, (0, rbac_middleware_1.authorizeRoles)(roles_1.UserRole.CUSTOMER), complaint_controller_1.ComplaintController.getMyComplaints);
-// Owner lists all complaints
-router.get('/', auth_middleware_1.authenticate, (0, rbac_middleware_1.authorizeRoles)(roles_1.UserRole.OWNER), complaint_controller_1.ComplaintController.getAllComplaints);
+// Admin / Owner lists all complaints
+router.get('/', auth_middleware_1.authenticate, (0, rbac_middleware_1.authorizeRoles)(roles_1.UserRole.ADMIN, roles_1.UserRole.OWNER), complaint_controller_1.ComplaintController.getAllComplaints);
 exports.default = router;

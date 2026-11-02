@@ -40,6 +40,7 @@ const ServiceSchema = new mongoose_1.Schema({
     slug: { type: String, required: true, unique: true, trim: true, lowercase: true },
     iconKey: { type: String, required: true, default: 'build' },
     sortOrder: { type: Number, default: 0 },
+    complaintIssues: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 ServiceSchema.index({ isActive: 1, sortOrder: 1 });
