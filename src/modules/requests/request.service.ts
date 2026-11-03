@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { ServiceRequestModel, IServiceRequest } from './request.model';
-import { ServiceModel, ProductModel } from '../catalog/catalog.models';
+import { ServiceModel, CategoryModel, ProductModel, ComplaintTypeModel } from '../catalog/catalog.models';
 import { UserModel } from '../users/user.model';
 import { NotificationModel, NotificationType } from '../notifications/notification.model';
 import { RequestStatus } from '../../shared/constants/status';
@@ -38,6 +38,29 @@ export class RequestService {
 
     let snapshotTitle = service.title;
     let snapshotPriceMinorUnits: number | undefined;
+
+    if (input.categoryId) {
+      if (!Types.ObjectId.isValid(input.categoryId)) {
+        throw new Error('INVALID_CATEGORY_ID');
+      }
+
+      // Ensure complaint types cannot accidentally be submitted as normal booking sub-services
+      const complaintType = await ComplaintTypeModel.findById(input.categoryId);
+      if (complaintType) {
+        throw new Error('COMPLAINT_TYPE_NOT_ALLOWED_AS_SUB_SERVICE');
+      }
+
+      const category = await CategoryModel.findById(input.categoryId);
+      if (!category) {
+        throw new Error('CATEGORY_NOT_FOUND');
+      }
+
+      if (category.serviceId.toString() !== service._id.toString()) {
+        throw new Error('CATEGORY_SERVICE_MISMATCH');
+      }
+
+      snapshotTitle = `${service.title} - ${category.title}`;
+    }
 
     if (input.productId) {
       const product = await ProductModel.findById(input.productId);

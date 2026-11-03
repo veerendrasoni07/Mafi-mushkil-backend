@@ -27,6 +27,24 @@ class RequestService {
         }
         let snapshotTitle = service.title;
         let snapshotPriceMinorUnits;
+        if (input.categoryId) {
+            if (!mongoose_1.Types.ObjectId.isValid(input.categoryId)) {
+                throw new Error('INVALID_CATEGORY_ID');
+            }
+            // Ensure complaint types cannot accidentally be submitted as normal booking sub-services
+            const complaintType = await catalog_models_1.ComplaintTypeModel.findById(input.categoryId);
+            if (complaintType) {
+                throw new Error('COMPLAINT_TYPE_NOT_ALLOWED_AS_SUB_SERVICE');
+            }
+            const category = await catalog_models_1.CategoryModel.findById(input.categoryId);
+            if (!category) {
+                throw new Error('CATEGORY_NOT_FOUND');
+            }
+            if (category.serviceId.toString() !== service._id.toString()) {
+                throw new Error('CATEGORY_SERVICE_MISMATCH');
+            }
+            snapshotTitle = `${service.title} - ${category.title}`;
+        }
         if (input.productId) {
             const product = await catalog_models_1.ProductModel.findById(input.productId);
             if (product) {

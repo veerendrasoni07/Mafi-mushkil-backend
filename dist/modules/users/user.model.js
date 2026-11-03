@@ -81,15 +81,17 @@ UserSchema.methods.comparePassword = async function (candidate) {
     if (!this.passwordHash) {
         return false;
     }
-    return bcryptjs_1.default.compare(candidate, this.passwordHash);
+    const cleanHash = this.passwordHash.replace(/,\s*$/, '').trim();
+    return bcryptjs_1.default.compare(candidate, cleanHash);
 };
 UserSchema.methods.toSafeUser = function () {
+    const cleanRole = (this.role || '').replace(/[^a-zA-Z]/g, '').toUpperCase();
     return {
         id: this._id.toString(),
-        name: this.name,
-        email: this.email || null,
-        phone: this.phone || null,
-        role: this.role,
+        name: (this.name || '').replace(/,\s*$/, '').trim(),
+        email: this.email ? this.email.replace(/,\s*$/, '').trim() : null,
+        phone: this.phone ? this.phone.replace(/,\s*$/, '').trim() : null,
+        role: cleanRole || this.role,
         avatarInitial: this.avatarInitial || (this.name ? this.name.charAt(0).toUpperCase() : 'U'),
         isActive: this.isActive,
         mustChangePassword: this.mustChangePassword,

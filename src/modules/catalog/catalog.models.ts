@@ -88,3 +88,31 @@ ProductSchema.index({ categoryId: 1, isActive: 1, sortOrder: 1 });
 ProductSchema.index({ serviceId: 1, isActive: 1 });
 
 export const ProductModel = mongoose.model<IProduct>('Product', ProductSchema);
+
+// --- COMPLAINT TYPE ---
+export interface IComplaintType extends Document {
+  serviceId: Types.ObjectId;
+  title: string;
+  slug: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ComplaintTypeSchema = new Schema<IComplaintType>(
+  {
+    serviceId: { type: Schema.Types.ObjectId, ref: 'Service', required: true, index: true },
+    title: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, trim: true, lowercase: true },
+    sortOrder: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+ComplaintTypeSchema.index({ serviceId: 1, isActive: 1, sortOrder: 1 });
+ComplaintTypeSchema.index({ serviceId: 1, title: 1 }, { unique: true });
+
+export const ComplaintTypeModel = mongoose.model<IComplaintType>('ComplaintType', ComplaintTypeSchema);
+

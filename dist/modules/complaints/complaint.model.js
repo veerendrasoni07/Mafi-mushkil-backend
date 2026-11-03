@@ -38,6 +38,8 @@ const mongoose_1 = __importStar(require("mongoose"));
 const status_1 = require("../../shared/constants/status");
 const ComplaintSchema = new mongoose_1.Schema({
     customerId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    serviceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Service', required: false, index: true },
+    complaintTypeId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'ComplaintType', required: false, index: true },
     requestId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'ServiceRequest', required: false, index: true },
     requestNumberSnapshot: { type: String, default: 'General' },
     serviceTitleSnapshot: { type: String, required: true },
@@ -52,5 +54,7 @@ const ComplaintSchema = new mongoose_1.Schema({
     ownerResponse: { type: String },
 }, { timestamps: true });
 ComplaintSchema.index({ customerId: 1, createdAt: -1 });
+ComplaintSchema.index({ serviceId: 1, createdAt: -1 });
+ComplaintSchema.index({ complaintTypeId: 1, createdAt: -1 });
 ComplaintSchema.index({ status: 1, createdAt: -1 });
 exports.ComplaintModel = mongoose_1.default.model('Complaint', ComplaintSchema);

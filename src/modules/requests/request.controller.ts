@@ -7,6 +7,7 @@ import { sendSuccess, sendError } from '../../shared/utils/response';
 export const CreateRequestSchema = z.object({
   serviceId: z.string().min(1, 'Service ID is required'),
   categoryId: z.string().optional(),
+  subServiceId: z.string().optional(),
   productId: z.string().optional(),
   problemDescription: z.string().min(3, 'Problem description must be at least 3 characters').max(2000),
   address: z.string().min(5, 'Address must be at least 5 characters').max(500),
@@ -25,10 +26,12 @@ export class RequestController {
       }
 
       const idempotencyKey = (req.headers['idempotency-key'] as string) || undefined;
+      const targetCategoryId = req.body.categoryId || req.body.subServiceId;
+
       const request = await RequestService.createRequest({
         customerId: req.user.id,
         serviceId: req.body.serviceId,
-        categoryId: req.body.categoryId,
+        categoryId: targetCategoryId,
         productId: req.body.productId,
         problemDescription: req.body.problemDescription,
         address: req.body.address,
@@ -39,6 +42,27 @@ export class RequestController {
     } catch (err: any) {
       if (err.message === 'SERVICE_NOT_FOUND') {
         sendError(res, 'SERVICE_NOT_FOUND', 'The requested service was not found', 404);
+        return;
+      }
+      if (err.message === 'COMPLAINT_TYPE_NOT_ALLOWED_AS_SUB_SERVICE') {
+        sendError(
+          res,
+          'INVALID_SUB_SERVICE',
+          'Complaint types cannot be booked as regular sub-services. Please use the complaint registration workflow.',
+          400
+        );
+        return;
+      }
+      if (err.message === 'CATEGORY_NOT_FOUND') {
+        sendError(res, 'CATEGORY_NOT_FOUND', 'The specified sub-service was not found', 404);
+        return;
+      }
+      if (err.message === 'CATEGORY_SERVICE_MISMATCH') {
+        sendError(res, 'SERVICE_MISMATCH', 'Selected sub-service does not belong to the selected service', 400);
+        return;
+      }
+      if (err.message === 'INVALID_CATEGORY_ID') {
+        sendError(res, 'INVALID_ID', 'Invalid sub-service ID format', 400);
         return;
       }
       sendError(res, 'CREATE_REQUEST_FAILED', err.message, 500);

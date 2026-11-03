@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProductModel = exports.CategoryModel = exports.ServiceModel = void 0;
+exports.ComplaintTypeModel = exports.ProductModel = exports.CategoryModel = exports.ServiceModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const ServiceSchema = new mongoose_1.Schema({
     title: { type: String, required: true, unique: true, trim: true },
@@ -69,3 +69,13 @@ const ProductSchema = new mongoose_1.Schema({
 ProductSchema.index({ categoryId: 1, isActive: 1, sortOrder: 1 });
 ProductSchema.index({ serviceId: 1, isActive: 1 });
 exports.ProductModel = mongoose_1.default.model('Product', ProductSchema);
+const ComplaintTypeSchema = new mongoose_1.Schema({
+    serviceId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Service', required: true, index: true },
+    title: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, trim: true, lowercase: true },
+    sortOrder: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
+}, { timestamps: true });
+ComplaintTypeSchema.index({ serviceId: 1, isActive: 1, sortOrder: 1 });
+ComplaintTypeSchema.index({ serviceId: 1, title: 1 }, { unique: true });
+exports.ComplaintTypeModel = mongoose_1.default.model('ComplaintType', ComplaintTypeSchema);

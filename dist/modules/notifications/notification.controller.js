@@ -11,8 +11,13 @@ class NotificationController {
                 (0, response_1.sendError)(res, 'UNAUTHORIZED', 'Authentication required', 401);
                 return;
             }
+            const userId = req.user.id;
+            const userObjectId = mongoose_1.Types.ObjectId.isValid(userId) ? new mongoose_1.Types.ObjectId(userId) : null;
             const notifications = await notification_model_1.NotificationModel.find({
-                recipientUserId: new mongoose_1.Types.ObjectId(req.user.id),
+                $or: [
+                    ...(userObjectId ? [{ recipientUserId: userObjectId }] : []),
+                    { recipientUserId: userId },
+                ],
             })
                 .sort({ createdAt: -1 })
                 .limit(50)
@@ -29,8 +34,13 @@ class NotificationController {
                 (0, response_1.sendError)(res, 'UNAUTHORIZED', 'Authentication required', 401);
                 return;
             }
+            const userId = req.user.id;
+            const userObjectId = mongoose_1.Types.ObjectId.isValid(userId) ? new mongoose_1.Types.ObjectId(userId) : null;
             const count = await notification_model_1.NotificationModel.countDocuments({
-                recipientUserId: new mongoose_1.Types.ObjectId(req.user.id),
+                $or: [
+                    ...(userObjectId ? [{ recipientUserId: userObjectId }] : []),
+                    { recipientUserId: userId },
+                ],
                 isRead: false,
             });
             (0, response_1.sendSuccess)(res, { unreadCount: count });
