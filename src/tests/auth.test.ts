@@ -2,14 +2,13 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'http';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApp } from '../app';
+import { config } from '../config/env';
 import { UserModel } from '../modules/users/user.model';
 import { UserRole } from '../shared/constants/roles';
 import bcrypt from 'bcryptjs';
 
 describe('Role-Based Authentication & Authorization System', () => {
-  let mongoServer: MongoMemoryServer;
   let server: http.Server;
   let baseUrl: string;
 
@@ -20,10 +19,23 @@ describe('Role-Based Authentication & Authorization System', () => {
   let customerToken: string;
   let customerUser: any;
 
+  const testEmails = [
+    'john.customer@example.com',
+    'hacker.admin@example.com',
+    'fake.engineer@example.com',
+    'robert.engineer@example.com',
+    'illegal@example.com',
+    'illegal2@example.com',
+  ];
+
   before(async () => {
-    // Spin up in-memory mongo
-    mongoServer = await MongoMemoryServer.create();
-    await mongoose.connect(mongoServer.getUri());
+    const uri = process.env.TEST_MONGODB_URI || process.env.MONGODB_URI || config.mongoUri;
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(uri);
+    }
+
+    // Clean up any test users from prior runs
+    await UserModel.deleteMany({ email: { $in: testEmails } });
 
     // Spin up test express app
     const app = createApp();
@@ -31,22 +43,35 @@ describe('Role-Based Authentication & Authorization System', () => {
     const address = server.address() as any;
     baseUrl = `http://localhost:${address.port}/api/v1`;
 
-    // Seed baseline Admin
+    // Seed/Update baseline Admin with AdminPassword123!
     const adminPasswordHash = await bcrypt.hash('AdminPassword123!', 10);
-    await UserModel.create({
-      name: 'Super Admin',
-      email: 'admin@mafimushkil.com',
-      passwordHash: adminPasswordHash,
-      role: UserRole.ADMIN,
-      isActive: true,
-      mustChangePassword: false,
-    });
+    await UserModel.findOneAndUpdate(
+      { email: 'admin@mafimushkil.com' },
+      {
+        $set: {
+          name: 'Super Admin',
+          email: 'admin@mafimushkil.com',
+          phone: '+919999900001',
+          passwordHash: adminPasswordHash,
+          role: UserRole.ADMIN,
+          isActive: true,
+          mustChangePassword: false,
+        },
+      },
+      { upsert: true }
+    );
   });
 
   after(async () => {
+    await UserModel.deleteMany({ email: { $in: testEmails } });
+    // Restore default password for admin
+    const defaultPasswordHash = await bcrypt.hash('password123', 10);
+    await UserModel.updateOne(
+      { email: 'admin@mafimushkil.com' },
+      { $set: { passwordHash: defaultPasswordHash } }
+    );
     if (server) server.close();
     await mongoose.disconnect();
-    if (mongoServer) await mongoServer.stop();
   });
 
   // Helper fetch function
@@ -67,6 +92,7 @@ describe('Role-Based Authentication & Authorization System', () => {
 
   // 1 & 2. Public customer registration
   test('1 & 2: Public registration creates a CUSTOMER account successfully', async () => {
+    await UserModel.deleteOne({ email: 'john.customer@example.com' });
     const res = await api('/auth/register', {
       method: 'POST',
       body: {
@@ -89,6 +115,7 @@ describe('Role-Based Authentication & Authorization System', () => {
 
   // 3 & 4. Public registration role spoofing protection
   test('3: Public registration with role: ADMIN is ignored and strictly creates CUSTOMER', async () => {
+    await UserModel.deleteOne({ email: 'hacker.admin@example.com' });
     const res = await api('/auth/register', {
       method: 'POST',
       body: {
@@ -104,6 +131,7 @@ describe('Role-Based Authentication & Authorization System', () => {
   });
 
   test('4: Public registration with role: ENGINEER is ignored and strictly creates CUSTOMER', async () => {
+    await UserModel.deleteOne({ email: 'fake.engineer@example.com' });
     const res = await api('/auth/register', {
       method: 'POST',
       body: {
@@ -114,7 +142,7 @@ describe('Role-Based Authentication & Authorization System', () => {
       },
     });
 
-    assert.equal(res.status, 201);
+    assert.equal(res.status, 201, `Expected 201 but got ${res.status}: ${JSON.stringify(res.data)}`);
     assert.equal(res.data.data.user.role, 'CUSTOMER', 'Role MUST be forced to CUSTOMER');
   });
 

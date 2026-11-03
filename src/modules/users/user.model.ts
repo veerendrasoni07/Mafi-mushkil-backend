@@ -52,7 +52,10 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Indexes
-UserSchema.index({ phone: 1, role: 1 }, { sparse: true });
+UserSchema.index(
+  { phone: 1, role: 1 },
+  { unique: true, partialFilterExpression: { phone: { $type: 'string' } } }
+);
 UserSchema.index({ role: 1, isActive: 1 });
 
 UserSchema.pre<IUser>('save', function (next) {

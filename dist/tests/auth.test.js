@@ -39,13 +39,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_test_1 = require("node:test");
 const strict_1 = __importDefault(require("node:assert/strict"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const mongodb_memory_server_1 = require("mongodb-memory-server");
 const app_1 = require("../app");
+const env_1 = require("../config/env");
 const user_model_1 = require("../modules/users/user.model");
 const roles_1 = require("../shared/constants/roles");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 (0, node_test_1.describe)('Role-Based Authentication & Authorization System', () => {
-    let mongoServer;
     let server;
     let baseUrl;
     // Track tokens
@@ -54,32 +53,48 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
     let engineerUser;
     let customerToken;
     let customerUser;
+    const testEmails = [
+        'john.customer@example.com',
+        'hacker.admin@example.com',
+        'fake.engineer@example.com',
+        'robert.engineer@example.com',
+        'illegal@example.com',
+        'illegal2@example.com',
+    ];
     (0, node_test_1.before)(async () => {
-        // Spin up in-memory mongo
-        mongoServer = await mongodb_memory_server_1.MongoMemoryServer.create();
-        await mongoose_1.default.connect(mongoServer.getUri());
+        const uri = process.env.TEST_MONGODB_URI || process.env.MONGODB_URI || env_1.config.mongoUri;
+        if (mongoose_1.default.connection.readyState === 0) {
+            await mongoose_1.default.connect(uri);
+        }
+        // Clean up any test users from prior runs
+        await user_model_1.UserModel.deleteMany({ email: { $in: testEmails } });
         // Spin up test express app
         const app = (0, app_1.createApp)();
         server = app.listen(0);
         const address = server.address();
         baseUrl = `http://localhost:${address.port}/api/v1`;
-        // Seed baseline Admin
+        // Seed/Update baseline Admin with AdminPassword123!
         const adminPasswordHash = await bcryptjs_1.default.hash('AdminPassword123!', 10);
-        await user_model_1.UserModel.create({
-            name: 'Super Admin',
-            email: 'admin@mafimushkil.com',
-            passwordHash: adminPasswordHash,
-            role: roles_1.UserRole.ADMIN,
-            isActive: true,
-            mustChangePassword: false,
-        });
+        await user_model_1.UserModel.findOneAndUpdate({ email: 'admin@mafimushkil.com' }, {
+            $set: {
+                name: 'Super Admin',
+                email: 'admin@mafimushkil.com',
+                phone: '+919999900001',
+                passwordHash: adminPasswordHash,
+                role: roles_1.UserRole.ADMIN,
+                isActive: true,
+                mustChangePassword: false,
+            },
+        }, { upsert: true });
     });
     (0, node_test_1.after)(async () => {
+        await user_model_1.UserModel.deleteMany({ email: { $in: testEmails } });
+        // Restore default password for admin
+        const defaultPasswordHash = await bcryptjs_1.default.hash('password123', 10);
+        await user_model_1.UserModel.updateOne({ email: 'admin@mafimushkil.com' }, { $set: { passwordHash: defaultPasswordHash } });
         if (server)
             server.close();
         await mongoose_1.default.disconnect();
-        if (mongoServer)
-            await mongoServer.stop();
     });
     // Helper fetch function
     async function api(path, options = {}) {
@@ -98,6 +113,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
     }
     // 1 & 2. Public customer registration
     (0, node_test_1.test)('1 & 2: Public registration creates a CUSTOMER account successfully', async () => {
+        await user_model_1.UserModel.deleteOne({ email: 'john.customer@example.com' });
         const res = await api('/auth/register', {
             method: 'POST',
             body: {
@@ -117,6 +133,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
     });
     // 3 & 4. Public registration role spoofing protection
     (0, node_test_1.test)('3: Public registration with role: ADMIN is ignored and strictly creates CUSTOMER', async () => {
+        await user_model_1.UserModel.deleteOne({ email: 'hacker.admin@example.com' });
         const res = await api('/auth/register', {
             method: 'POST',
             body: {
@@ -130,6 +147,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
         strict_1.default.equal(res.data.data.user.role, 'CUSTOMER', 'Role MUST be forced to CUSTOMER');
     });
     (0, node_test_1.test)('4: Public registration with role: ENGINEER is ignored and strictly creates CUSTOMER', async () => {
+        await user_model_1.UserModel.deleteOne({ email: 'fake.engineer@example.com' });
         const res = await api('/auth/register', {
             method: 'POST',
             body: {
@@ -139,7 +157,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
                 role: 'ENGINEER',
             },
         });
-        strict_1.default.equal(res.status, 201);
+        strict_1.default.equal(res.status, 201, `Expected 201 but got ${res.status}: ${JSON.stringify(res.data)}`);
         strict_1.default.equal(res.data.data.user.role, 'CUSTOMER', 'Role MUST be forced to CUSTOMER');
     });
     // 5. Customer can log in

@@ -208,7 +208,7 @@ async function seedDatabase() {
         {
             name: 'Mafi Mushkil Admin',
             email: 'admin@mafimushkil.com',
-            phone: '+919999900000',
+            phone: '+919999900001',
             passwordHash: defaultPasswordHash,
             role: roles_1.UserRole.ADMIN,
             avatarInitial: 'M',
@@ -247,9 +247,25 @@ async function seedDatabase() {
         },
     ];
     for (const u of usersToSeed) {
-        const existing = await user_model_1.UserModel.findOne({ $or: [{ email: u.email }, { phone: u.phone }] });
+        const queryConditions = [];
+        if (u.email)
+            queryConditions.push({ email: u.email });
+        if (u.phone)
+            queryConditions.push({ phone: u.phone, role: u.role });
+        const existing = await user_model_1.UserModel.findOne(queryConditions.length > 1 ? { $or: queryConditions } : queryConditions[0]);
         if (!existing) {
             await user_model_1.UserModel.create(u);
+        }
+        else {
+            if (u.email && !existing.email)
+                existing.email = u.email;
+            if (u.phone && !existing.phone)
+                existing.phone = u.phone;
+            existing.passwordHash = u.passwordHash;
+            existing.role = u.role;
+            existing.isActive = true;
+            existing.mustChangePassword = false;
+            await existing.save();
         }
     }
     // 2. IDEMPOTENT SEED CATALOG (Services, Sub-services, Complaint Types)
